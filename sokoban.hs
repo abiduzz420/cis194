@@ -3,7 +3,7 @@ import CodeWorld
 
 -- Lists
 
-data List a = Empty | Entry a (List a)
+data List a = Empty | Entry a (List a) deriving Eq
 
 mapList :: (a -> b) -> List a -> List b
 mapList _ Empty = Empty
@@ -16,34 +16,40 @@ combine (Entry p ps) = p & combine ps
 -- Coordinates
 
 data Coord = C Integer Integer
-data Direction = U | D | L | R
+data Direction = U | D | L | R deriving Eq
+
+instance Eq Coord where
+  C x1 y1 == C x2 y2 = x1 == x2 && y1 == y2
+  c1 /= c2 = not (c1 == c2)
 
 adjacentCoord :: Direction -> Coord -> Coord
 adjacentCoord U (C x y) = C x (y+1)
+
 adjacentCoord D (C x y) = C x (y-1)
 adjacentCoord L (C x y) = C (x-1) y
 adjacentCoord R (C x y) = C (x+1) y
 
 -- The maze
 
-data Tile = Wall | Ground | Storage | Box | Blank
+data Tile = Wall | Ground | Storage | Box | Blank deriving Eq
 
 maze :: Coord -> Tile
 maze (C x y)
-  | abs x > 4  || abs y > 4  = Blank
-  | abs x == 4 || abs y == 4 = Wall
-  | x ==  2 && y <= 1        = Wall
-  | x ==  3 && y <= 0        = Storage
-  | x >= -2 && y == 0        = Box
-  | otherwise                = Ground
+  | abs x >  4 || abs y >  4           = Blank
+  | abs x == 4 || abs y == 4           = Wall
+  | x ==     1 && y <      0           = Wall
+  | x ==    -3 && y ==    -2           = Wall
+  | x <=     1 && x >     -2 && y == 0 = Wall
+  | x >     -3 && x <      3 && y == 2 = Wall
+  | x ==     3 && y >      1           = Storage
+  | y ==    -2 && x <      0           = Box
+  | y ==    -2 && x ==     2           = Box
+  | y ==    0  && x ==     3           = Box
+  | y == -1    && x > 1      && x < 4  = Storage
+  | otherwise                          = Ground
   
 boxes :: List Coord -> Picture
 boxes cs = combine (mapList (\c -> atCoord c (drawTile Box)) cs)
-
-eqCoord :: Coord -> Coord -> Bool
-eqCoord (C r1 c1) (C r2 c2)
-  | r1 == r2 && c1 == c2 = True
-  | otherwise = False
 
 noBoxMaze :: Coord -> Tile
 noBoxMaze c = case (maze c) of
@@ -52,7 +58,7 @@ noBoxMaze c = case (maze c) of
  
 contains :: List Coord -> Coord -> Bool
 contains Empty _ = False
-contains (Entry c cs) coord = eqCoord c coord || contains cs coord
+contains (Entry c cs) coord = c == coord || contains cs coord
 
 mazeWithBoxes :: List Coord -> Coord -> Tile
 mazeWithBoxes Empty c = maze c
@@ -62,7 +68,7 @@ mazeWithBoxes list coord
 
 -- The state
 
-data State = S Coord Direction (List Coord)
+data State = S Coord Direction (List Coord) deriving Eq
 
 appendList :: List a -> List a -> List a
 appendList a Empty = a
@@ -70,13 +76,10 @@ appendList a (Entry b bRest) = appendList nA bRest
   where
     nA = Entry b a
 
-isBox :: Tile -> Bool
-isBox Box = True
-isBox _ = False
 
 getBox :: Coord -> List Coord
 getBox c
-  | isBox (maze c) = Entry c Empty
+  | (maze c) == Box = Entry c Empty
   | otherwise = Empty
 
 allBoxes :: Integer -> List Coord
@@ -103,12 +106,12 @@ changeBoxState (S playerCurrent dir list) = boxMove (S playerCurrent dir list) b
 
 boxMove :: State -> Coord -> Coord -> State
 boxMove (S playerCurrent dir list) boxFromCoord boxToCoord
-  | isOk (mazeWithBoxes list boxToCoord) = (S boxFromCoord dir (mapList (\c -> moveFromTo boxFromCoord boxToCoord c) list))  
+  | isOk (mazeWithBoxes list boxToCoord) = (S boxFromCoord dir (mapList (\c -> moveCoordFromTo boxFromCoord boxToCoord c) list))  
   | otherwise = (S playerCurrent dir list)
 
 move :: State -> State
 move (S c dir list)
-  | isBox adjTile = changeBoxState (S c dir list)
+  | adjTile == Box = changeBoxState (S c dir list)
   | isOk adjTile = (S adjCoord dir list)
   | otherwise = (S c dir list)
     where
@@ -120,14 +123,17 @@ isOk Ground = True
 isOk Storage = True
 isOk _ = False
 
-moveFromTo :: Coord -> Coord -> Coord -> Coord
-moveFromTo fromC toC coordInTheList
-  | eqCoord fromC coordInTheList = toC
-  | otherwise = coordInTheList
+moveFromTo :: Eq c => c -> c -> c -> c
+moveFromTo fromC toC cFromTheList
+  | fromC == cFromTheList = toC
+  | otherwise = cFromTheList
+
+moveCoordFromTo :: Coord -> Coord -> Coord -> Coord
+moveCoordFromTo = moveFromTo
 
 handleEvent :: Event -> State -> State
 handleEvent (KeyPress key) (S c dir bcs)
-    | isWon (S c dir bcs) = (S c dir bcs)
+    | isWon bcs = (S c dir bcs)
     | key == "Right" = move (S c R bcs)
     | key == "Up"    = move (S c U bcs)
     | key == "Left"  = move (S c L bcs)
@@ -141,9 +147,9 @@ handleTime _ ps = ps
 
 wall, ground, storage, box, player, lowerBody :: Picture
 wall =    colored (grey 0.4) (solidRectangle 1 1)
-ground =  colored yellow (solidRectangle 1 1)
-storage = colored white (solidCircle 0.3) & ground
-box =     colored brown (solidRectangle 1 1)
+ground =  colored Yellow (solidRectangle 1 1)
+storage = colored White (solidCircle 0.3) & ground
+box =     colored Brown (solidRectangle 1 1)
 player = translated 0.0 0.3 cranium
        & path [(0,0),(0.3,0.05)] 
        & path [(0,0),(0.3,-0.05)] 
@@ -191,7 +197,7 @@ drawTileAt :: Integer -> Integer -> Picture
 drawTileAt r c = translated (fromIntegral r) (fromIntegral c) (drawTile (noBoxMaze (C r c)))
   
 drawState :: State -> Picture
-drawState (S c dir bxs) = hasWon (S c dir bxs) & atCoord c (changePlayerPicture dir)  & boxes bxs & pictureOfMaze
+drawState (S c dir bxs) = hasWon bxs & atCoord c (changePlayerPicture dir)  & boxes bxs & pictureOfMaze
    
 -- The complete interaction
 
@@ -216,7 +222,12 @@ data Interaction world  = Interaction
     (Double -> world -> world)
     (Event -> world -> world)
     (world -> Picture)
-    
+
+instance Eq s => Eq (SSState s) where
+  StartScreen == StartScreen = True
+  Running s == Running s' = s == s'
+  _ == _ = False
+
 startScreen :: Picture
 startScreen = scaled 3 3 (text "Sokoban!")
 
@@ -236,7 +247,27 @@ withStartScreen (Interaction state0 step handle draw)
     
     draw' StartScreen = startScreen
     draw' (Running s) = draw s
+    
+-- Undo functionality
 
+data WithUndo a = WithUndo a (List a)
+
+undoInteraction :: Eq a => Interaction a -> Interaction (WithUndo a)
+undoInteraction (Interaction state0 step handle draw)
+  = Interaction state0' step' handle' draw'
+  where
+    state0' = WithUndo state0 Empty
+    step' t (WithUndo s stack) = WithUndo (step t s) stack
+    handle' (KeyPress key) (WithUndo s stack) | key == "U"
+      = case stack of
+        Entry s' stack' -> WithUndo s' stack'
+        Empty -> WithUndo s Empty
+    handle' e (WithUndo s stack)
+      | s' == s = WithUndo s stack
+      | otherwise = WithUndo (handle e s) (Entry s stack)
+      where s' = handle e s
+    draw' (WithUndo s _) = draw s
+ 
 -- Match Won
 
 wonScreen :: Picture
@@ -255,17 +286,17 @@ reduceList :: List Bool -> Bool
 reduceList Empty = True
 reduceList (Entry c cs) = c && reduceList cs
 
-allOnStorage :: State -> Bool
-allOnStorage (S _ _ list) = reduceList (mapList (\c -> boxOnStorage c) list)
+allOnStorage :: List Coord -> Bool
+allOnStorage list = reduceList (mapList (\c -> boxOnStorage c) list)
 
-isWon :: State -> Bool
-isWon state
- | allOnStorage state = True
+isWon :: List Coord -> Bool
+isWon list
+ | allOnStorage list = True
  | otherwise = False
  
-hasWon :: State -> Picture
-hasWon state
-  | isWon state = wonScreen
+hasWon :: List Coord -> Picture
+hasWon list
+  | isWon list = wonScreen
   | otherwise = blank
 
 -- The main function
@@ -274,4 +305,4 @@ sokoban :: Interaction State
 sokoban = Interaction initState handleTime handleEvent drawState
 
 main :: IO ()
-main = runInteraction (resetable (withStartScreen sokoban))
+main = runInteraction (resetable (undoInteraction (withStartScreen sokoban)))
