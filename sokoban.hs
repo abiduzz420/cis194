@@ -13,9 +13,6 @@ combine :: List Picture -> Picture
 combine Empty = blank
 combine (Entry p ps) = p & combine ps
 
-elemList :: Eq a => List a -> Bool
-elemList (Entry x xs) = contains xs x
-
 appendList :: List a -> List a -> List a
 appendList a Empty = a
 appendList a (Entry b bRest) = appendList nA bRest
@@ -32,16 +29,50 @@ filterList p (Entry x xs)
   | p x = Entry x (filterList p xs)
   | otherwise = filterList p xs
 
+contains :: Eq a => a -> List a -> Bool
+contains _ Empty = False
+contains coord (Entry c cs) = c == coord || contains coord cs 
+
 nths :: List a -> Integer -> a
 nths (Entry x xs) n
   | n > listLength (Entry x xs) = error "list too short"
   | n == 1 = x
   | otherwise = nths xs (n-1)
+  
+
+-- Graph Search
+
+isGraphClosed :: Eq a => a -> (a -> List a) -> (a -> Bool) -> Bool
+isGraphClosed initial adjacent isOk = go Empty (Entry initial Empty)
+  where
+    go _ Empty = True
+    go seen (Entry c todo) | contains c seen = go seen todo
+    go _ (Entry c _) | not(isOk c) = False
+    go seen (Entry c todo) = go (Entry c seen) (appendList (adjacent c) todo)
+  
+isClosed :: Maze -> Bool
+isClosed (Maze c0 maze) = onRightSpot && isGraphClosed c0 adjacent isOk
+  where
+    onRightSpot = case maze c0 of
+      Ground -> True
+      Storage -> True
+      _ -> False
+    isOk c = case maze c0 of
+      Blank -> False
+      _ -> True
+    adjacent c = filterList check (mapList (\d -> adjacentCoord d c) allDirections)
+      where
+        check c = case maze c of
+          Wall -> False
+          _ -> True
 
 -- Coordinates
 
 data Coord = C Integer Integer
 data Direction = U | D | L | R deriving Eq
+
+allDirections :: List Direction
+allDirections = Entry U (Entry L (Entry R (Entry D Empty)))
 
 instance Eq Coord where
   C x1 y1 == C x2 y2 = x1 == x2 && y1 == y2
@@ -73,16 +104,12 @@ boxes cs = combine (mapList (\c -> atCoord c (drawTile Box)) cs)
 noBoxMaze :: Coord -> Tile
 noBoxMaze c = case (maze c) of
   Box -> Ground
-  t -> t
- 
-contains :: Eq a => List a -> a -> Bool
-contains Empty _ = False
-contains (Entry c cs) coord = c == coord || contains cs coord
+  t -> t 
 
 mazeWithBoxes :: List Coord -> Coord -> Tile
 mazeWithBoxes Empty c = maze c
 mazeWithBoxes list coord
-  | contains list coord = Box
+  | contains coord list = Box
   | otherwise = noBoxMaze coord
 
 -- The state
