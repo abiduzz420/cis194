@@ -4,5 +4,5 @@ Uses `CodeWorld` hackage.
 
 # Projects listed
 
-- Traffic controller ([video demo](https://www.youtube.com/watch?v=_odkmomaCVI))
-- Sokoban ([video demo](https://youtu.be/doRR62FVDmI))
+- Traffic controller ([live demo](https://code.world/run.html?mode=haskell&dhash=D3fJM4ybn08vonzftyAd40Q))
+- Sokoban ([live demo](https://code.world/run.html?mode=haskell&dhash=D3DsYGm9Uw3yc-JR_C-sB7g))
