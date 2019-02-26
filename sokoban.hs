@@ -5,6 +5,10 @@ import CodeWorld
 
 data List a = Empty | Entry a (List a) deriving Eq
 
+{- 
+TODO: mapList: it'd more idiomatic to define a Functor instance for List, and even more idiomatic to 
+just reuse the existing [a] type for lists.
+-}
 mapList :: (a -> b) -> List a -> List b
 mapList _ Empty = Empty
 mapList f (Entry c cs) = Entry (f c) (mapList f cs)
@@ -88,6 +92,10 @@ mazeWithBoxes level list coord
     (Maze c maze) = nths mazes level
 
 -- The state
+
+{-
+TODO: write a grammar for the levels and use monadic parsing to load them on the go instead hard coding them ! :)
+-}
 
 data State = S Coord Direction (List Coord) Integer deriving Eq
 
@@ -225,6 +233,9 @@ runInteraction (Interaction state0 step handle draw)
   = interactionOf state0 step handle draw
 
 -- Resetable interactions
+{-
+TODO: Pressing Esc should not go to start of the game but instead should keep the current level persistent in the new game
+-}
 
 resetable :: Interaction s -> Interaction s
 resetable (Interaction state0 step handle draw)
@@ -274,6 +285,9 @@ withStartScreen (Interaction state0 step handle draw)
     draw' (Running s) = draw s
     
 -- Undo functionality
+{-
+TODO: by pressing "u", one can go to previous level which it shouldn't
+-}
 
 data WithUndo a = WithUndo a (List a)
 
