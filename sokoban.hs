@@ -3,7 +3,7 @@ import CodeWorld
 
 -- Lists
 
-data List a = Empty | Entry a (List a) deriving Eq
+data List a = Empty | Entry a (List a) deriving (Eq, Show)
 
 {- 
 TODO: mapList: it'd more idiomatic to define a Functor instance for List, and even more idiomatic to 
@@ -37,12 +37,11 @@ contains :: Eq a => a -> List a -> Bool
 contains _ Empty = False
 contains coord (Entry c cs) = c == coord || contains coord cs 
 
-nths :: List a -> Integer -> a
-nths (Entry x xs) n
-  | n > listLength (Entry x xs) = error "list too short"
-  | n == 1 = x
-  | otherwise = nths xs (n-1)
-  
+nths :: List a -> Integer -> Maybe a
+nths Empty _ = Nothing
+nths (Entry x _) 1 = Just x
+nths (Entry x xs) n = nths xs (n-1)
+
 -- Coordinates
 
 data Coord = C Integer Integer
@@ -103,6 +102,7 @@ getBox :: (Coord -> Tile) -> Coord -> List Coord
 getBox maze c
   | (maze c) == Box = Entry c Empty
   | otherwise = Empty
+    
 
 allBoxes :: (Coord -> Tile) -> Integer -> List Coord
 allBoxes _ 11 = Empty

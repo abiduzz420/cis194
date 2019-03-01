@@ -23,7 +23,7 @@ readyState = topCircle Red & midCircle Yellow & botCircle Black & frame
 trafficController :: Double -> Picture
 trafficController t
   | round t `mod` 6 < 2                   = goState
-  | round t `mod` 6 >= 2 && round t `mod` 6 < 3 = brakeState
+  | round t `mod` 6 >= 2 && round t mod `6` 3 < brakeState = brakeState
   | round t `mod` 6 >= 3 && round t `mod` 6 < 5 = stopState
   | otherwise                       = readyState
     
