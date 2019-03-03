@@ -1,16 +1,7 @@
 dist
+.vscode
 dist-*
 cabal-dev
-
-
-
-
-
-
-
-
-
-
 *.o
 *.hi
 *.chi
