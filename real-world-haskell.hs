@@ -86,12 +86,12 @@ wordCount str = unlines [
                     "Number of words followed by themselves: " ++ (show sameWords),
                     "Length of the longest line: " ++ (show longestLine)
                   ]
-                where
-                  allLines = lines str
-                  numLines = length allLines
-                  emptyLines = (length . filter (== "")) allLines
-                  allWords = words str
-                  numWords = length allWords
-                  uniqueWords = length $ unique [] allWords
-                  sameWords = (length . filter (\(x,y) -> x == y) . adjacents) allWords
+								where
+									allLines = lines str
+									numLines = length allLines
+									emptyLines = (length . filter (== "")) allLines
+									allWords = words str
+									numWords = length allWords
+									uniqueWords = length $ unique [] allWords
+									sameWords = (length . filter (\(x,y) -> x == y) . adjacents) allWords
 									longestLine = longestText allLines
