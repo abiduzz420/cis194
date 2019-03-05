@@ -33,7 +33,7 @@ adjacents :: [a] -> [(a, a)]
 adjacents [] = []
 adjacents a
   | length a == 1 = []
-  | otherwise = (x, y) : adjacents xs
+  | otherwise = (x, y) : adjacents (y:xs)
   where
     (x:y:xs) = a
 
@@ -91,64 +91,93 @@ wordCount str =
     emptyLines = (length . filter (== "")) allLines
     allWords = words str
     numWords = length allWords
-    uniqueWords = length $ unique [] allWords -- Alternatively you can just do `length $ nub allWords`
+    uniqueWords = length $ unique [] allWords
+    -- Alternatively you can just do `length $ nub allWords to find uniqueWords`
     sameWords = (length . filter (\(x, y) -> x == y) . adjacents) allWords
     longestLine = longestText allLines
 
 -- Exercise 3
+testResults :: [(String, [Bool])]
+testResults =
+  [ ("halveEvens", ex_halveEvens)
+  , ("safeString", ex_safeString)
+  , ("holes", ex_holes)
+  , ("longestText", ex_longestText)
+  , ("adjacents", ex_adjacents)
+  , ("commas", ex_commas)
+  , ("addPolynomials", ex_addPolynomials)
+  , ("sumNumbers", ex_sumNumbers)
+  ]
 
--- Test cases
+formatTest :: (String, [Bool]) -> String
+formatTest (x,list) = 
+  x ++ ": "
+  ++ (show . length . filter (\x -> x == True)) list
+  ++ "/" ++ (show . length) list ++ " passed. "
+  ++ failTests list
+
+formatTests :: [(String, [Bool])] -> String
+formatTests tests =
+  (unlines . map formatTest) tests
+
+failTests :: [Bool] -> String
+failTests boolList
+  | and boolList = "✔"
+  | otherwise = "Failed " ++ (commas . map show . map succ . elemIndices False) boolList
+
+main :: IO()
+main = putStrLn $ formatTests testResults
+
+  -- Test cases
 ex_halveEvens =
-	[ halveEvens [] == []
-	, halveEvens [1,2,3,4,5] == [1,2]
-	, halveEvens [6,6,6,3,3,3,2,2,2] == [3,3,3,1,1,1]
-	]
+  [ halveEvens [] == []
+  , halveEvens [1, 2, 3, 4, 5] == [1, 2]
+  , halveEvens [6, 6, 6, 3, 3, 3, 2, 2, 2] == [3, 3, 3, 1, 1, 1]
+  ]
 
 ex_safeString =
-	[ safeString [] == []
-	, safeString "Hello World!" == "Hello World!"
-	, safeString "Thatâ€™s your line:\n" == "That_s your line:_"
-	, safeString "ðŸ™‹.o(â€œMe Me Meâ€)" == "_.o(_Me Me Me_)"
-	]
+  [ safeString [] == []
+  , safeString "Hello World!" == "Hello World!"
+  , safeString "That🙋s your line:\n" == "That_s your line:_"
+  , safeString "🙋.o(🙋Me Me Me🙋)" == "_.o(_Me Me Me_)"
+  ]
 
 ex_holes =
- [ holes "" == []
- , holes "Hello" == ["ello", "Hllo", "Helo", "Helo", "Hell"]
- ]
+  [holes "" == [], holes "Hello" == ["ello", "Hllo", "Helo", "Helo", "Hell"]]
 
 ex_longestText =
- [ longestText [True,False] == False
- , longestText [2,4,16,32] == (32::Int)
- , longestText (words "Hello World") == "World"
- , longestText (words "OlÃ¡ mundo") ==  "OlÃ¡"
- ]
+  [ longestText [True, False] == False
+  , longestText [2, 4, 16, 32] == (32 :: Int)
+  , longestText (words "Hello World") == "World"
+  , longestText (words "OlÃ¡ mundo") == "OlÃ¡"
+  ]
 
 ex_adjacents =
- [ adjacents "" == []
- , adjacents [True] == []
- , adjacents "Hello" == [('H','e'),('e','l'),('l','l'),('l','o')]
- ]
+  [ adjacents "" == []
+  , adjacents [True] == []
+  , adjacents "Hello" == [('H', 'e'), ('e', 'l'), ('l', 'l'), ('l', 'o')]
+  , adjacents "Hell" == [('H', 'e'), ('e', 'l'), ('l', 'l')]
+  ]
 
 ex_commas =
- [ commas [] == ""
- , commas ["Hello"] == "Hello"
- , commas ["Hello", "World"] == "Hello, World"
- , commas ["Hello", "", "World"] == "Hello, , World"
- , commas ["Hello", "new", "World"] == "Hello, new, World"
- ]
+  [ commas [] == ""
+  , commas ["Hello"] == "Hello"
+  , commas ["Hello", "World"] == "Hello, World"
+  , commas ["Hello", "", "World"] == "Hello, , World"
+  , commas ["Hello", "new", "World"] == "Hello, new, World"
+  ]
 
 ex_addPolynomials =
- [ addPolynomials [[]] == []
- , addPolynomials [[0, 1], [1, 1]] == [1, 2]
- , addPolynomials [[0, 1, 5], [7, 0, 0], [-2, -1, 5]] == [5, 0, 10]
- ]
+  [ addPolynomials [[]] == []
+  , addPolynomials [[0, 1], [1, 1]] == [1, 2]
+  , addPolynomials [[0, 1, 5], [7, 0, 0], [-2, -1, 5]] == [5, 0, 10]
+  ]
 
 ex_sumNumbers =
- [ sumNumbers "" == 0
- , sumNumbers "Hello world!" == 0
- , sumNumbers "a1bc222d3f44" == 270
- , sumNumbers "words0are1234separated12by3integers45678" == 46927
- , sumNumbers "000a." == 0
- , sumNumbers "0.00a." == 0
- ]
-
+  [ sumNumbers "" == 0
+  , sumNumbers "Hello world!" == 0
+  , sumNumbers "a1bc222d3f44" == 270
+  , sumNumbers "words0are1234separated12by3integers45678" == 46927
+  , sumNumbers "000a." == 0
+  , sumNumbers "0.00a." == 0
+  ]
